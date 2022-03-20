@@ -72,10 +72,17 @@ class Seq2SeqTransformer(nn.Module):
     return self.generator(outs)
 
   def encode(self, src: Tensor, srcMask: Tensor):
-    return self.transformer.encoder(self.positional_encoding(self.src_tok_emb(src)), srcMask)
+    return self.transformer.encoder(
+      self.positional_encoding(self.src_tok_emb(src)),
+      srcMask
+    )
 
   def decode(self, tgt: Tensor, memory: Tensor, tgtMask: Tensor):
-    return self.transformer.decoder(self.positional_encoding(self.tgt_tok_emb(tgt)), memory, tgtMask)
+    return self.transformer.decoder(
+      self.positional_encoding(self.tgt_tok_emb(tgt)),
+      memory,
+      tgtMask
+    )
 
   # Method for translating from srcLanguage to tgtLangauge (Japanese -> simplified Japanese)
   def translate(self, srcSentence: str):
@@ -83,7 +90,14 @@ class Seq2SeqTransformer(nn.Module):
     src = textTransform[SRC_LANGUAGE](srcSentence).view(-1, 1)
     num_tokens = src.shape[0]
     srcMask = (torch.zeros(num_tokens, num_tokens)).type(torch.bool)
-    tgtTokens = greedyDecode(self, src, srcMask, maxLen=num_tokens + 5, startSymbol=BOS_IDX, device=self.device).flatten()
+    tgtTokens = greedyDecode(
+      self,
+      src,
+      srcMask,
+      maxLen=num_tokens + 5,
+      startSymbol=BOS_IDX,
+      device=self.device
+    ).flatten()
     tokens = vocabTransform[TGT_LANGUAGE].lookup_tokens(list(tgtTokens.cpu().numpy()))
 
     return self.tokensToText(tokens)

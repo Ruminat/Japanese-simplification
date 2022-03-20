@@ -3,8 +3,8 @@ from typing import Iterable, List
 import torch
 from modules.Dataset.main import MyDataset
 from modules.Language.definitions import (BOS_IDX, EOS_IDX,
-                                          LANGUAGE_TO_SPACY_DATASET, PAD_IDX, SPACY_JP,
-                                          UNK_IDX, SPECIAL_SYMBOLS)
+                                          LANGUAGE_TO_SPACY_DATASET, PAD_IDX,
+                                          SPECIAL_SYMBOLS, UNK_IDX)
 from torch.nn.utils.rnn import pad_sequence
 from torchtext.data.utils import get_tokenizer
 from torchtext.vocab import build_vocab_from_iterator
@@ -23,7 +23,12 @@ def getTokenTransform(srcLanguage: str, tgtLanguage: str):
     tgtLanguage: getSpacyTokenizer(tgtLanguage),
   }
 
-def getVocabTransform(srcLanguage: str, tgtLanguage: str, tokenTransform: dict, dataset: MyDataset):
+def getVocabTransform(
+  srcLanguage: str,
+  tgtLanguage: str,
+  tokenTransform: dict,
+  dataset: MyDataset
+):
   vocabTransform = {}
   for language in [srcLanguage, tgtLanguage]:
     # Training data Iterator
@@ -51,7 +56,12 @@ def yieldTokens(tokenTransform: dict, dataIter: Iterable, language: str) -> List
     yield tokenizer(sample)
 
 # src and tgt language text transforms to convert raw strings into tensors indices
-def getTextTransform(srcLanguage: str, tgtLanguage: str, tokenTransform: dict, vocabTransform: dict):
+def getTextTransform(
+  srcLanguage: str,
+  tgtLanguage: str,
+  tokenTransform: dict,
+  vocabTransform: dict
+):
   textTransform = {}
   for language in [srcLanguage, tgtLanguage]:
     textTransform[language] = sequentialTransforms(

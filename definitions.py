@@ -30,10 +30,10 @@ SEED = 0
 BATCH_SIZE = 64
 
 # Optimizer parameters
-WEIGHT_DECAY = 0.01
+WEIGHT_DECAY = 0
 LEARNING_RATE = 0.0001
-BETAS = (0.9, 0.999)
-EPSILON = 1e-6
+BETAS = (0.9, 0.98)
+EPSILON = 1e-9
 
 # The number of training epochs
 NUM_EPOCHS = 30

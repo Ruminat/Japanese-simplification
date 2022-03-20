@@ -5,7 +5,8 @@ import torch.nn as nn
 from torch import Tensor
 
 
-# helper Module that adds positional encoding to the token embedding to introduce a notion of word order.
+# helper Module that adds positional encoding to the token embedding
+# to introduce a notion of word order
 class PositionalEncoding(nn.Module):
   def __init__(
     self,

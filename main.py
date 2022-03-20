@@ -8,6 +8,7 @@ try:
   from rich.console import Console
   console = Console()
 except ImportError as e:
+  print("Module `Console` is not installed!")
   class MyConsole:
     def print(content):
       print(content)
@@ -25,7 +26,10 @@ def printHelp():
   with open("./README.md", encoding = 'utf-8') as readme:
     console.print(Markdown(readme.read()))
   if (hadErrors):
-    print("\n -- You probably didn't follow the instructions above, so be sure to check them out -- \n")
+    print("""
+      --> You probably didn't follow the instructions above, <--
+      --> so be sure to check them out                       <--
+    """)
 
 if (hadErrors or "--help" in sys.argv or "--h" in sys.argv):
   printHelp()

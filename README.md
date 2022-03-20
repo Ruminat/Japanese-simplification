@@ -1,4 +1,4 @@
-## Japanese simplificatin system
+## Japanese simplification system
 
 This is a repository with a Transformer model for simplifying Japanese sentences.
 Made by Vlad Furman (https://github.com/Ruminat).
@@ -34,7 +34,7 @@ The main code is placed in `./main.py`. You can train the model with the followi
 python main.py --train
 ```
 
-If you don't want to train the model yourself, you can download a trained model from https://github, place it in the `./build` directory and run:
+If you don't want to train the model yourself, you can download a trained model from https://github.com/Ruminat/Japanese-simplification/releases, place it in the `./build` directory and run:
 ```bash
 python main.py --load
 ```
@@ -49,4 +49,5 @@ python main.py --server
 
 You can run `main.py` with the following flags:
 - `--help` will print this README.md,
+- `--no-print` with this flag the test sentences won't be printed,
 - `--version` or `--v` will print the current app verion.

@@ -1,6 +1,10 @@
 import sys
 
-from utils import getTrainedTransformer, initiatePyTorch, loadTransformer, prettyPrintTranslation
+from definitions import DATASET
+from modules.Language.definitions import JAPANESE_SIMPLIFIED, JAPANESE_SOURCE
+from modules.Metrics.bleu import getBleuScore
+from utils import (getTrainedTransformer, initiatePyTorch, loadTransformer,
+                   prettyPrintTranslation)
 
 
 def startTransformerApp():
@@ -17,6 +21,8 @@ def startTransformerApp():
     transformer = getTrainedTransformer()
 
   # -- Testing the model --
+  blueScore = getBleuScore(transformer, DATASET, JAPANESE_SOURCE, JAPANESE_SIMPLIFIED)
+  print(f"BLEU score: {blueScore}")
 
   if ("--no-print" not in sys.argv):
     print("\nSentences that are not in the dataset\n")
