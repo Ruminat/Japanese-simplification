@@ -6,20 +6,17 @@ hadErrors = False
 
 try:
   from rich.console import Console
+  from rich.markdown import Markdown
   console = Console()
 except ImportError as e:
-  print("Module `Console` is not installed!")
+  print("Module `Rich` is not installed!")
+  Markdown = str
+
   class MyConsole:
     def print(content):
       print(content)
-  console = MyConsole
-  hadErrors = True
 
-try:
-  from rich.markdown import Markdown
-except ImportError as e:
-  print("Module `Markdown` is not installed!")
-  Markdown = str
+  console = MyConsole
   hadErrors = True
 
 def printHelp():

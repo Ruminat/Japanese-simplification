@@ -1,10 +1,10 @@
 from typing import List
+from spacy import Vocab
 import torch
 import torch.nn as nn
-from definitions import (SRC_LANGUAGE, TGT_LANGUAGE, textTransform,
-                         vocabTransform)
 from modules.Embedding.main import TokenEmbedding
-from modules.Language.definitions import BOS_IDX, BOS_SYMBOL, EOS_SYMBOL
+from modules.Language.definitions import BOS_IDX, BOS_SYMBOL, EOS_SYMBOL, TTextTransformer, TTokenizer
+from modules.Language.utils import tensorTransform
 from modules.PositionalEncoding.main import PositionalEncoding
 from modules.Seq2SeqTransformer.utils import greedyDecode
 from torch import Tensor
@@ -19,13 +19,13 @@ class Seq2SeqTransformer(nn.Module):
     batchSize: int,
     srcLanguage: str,
     tgtLanguage: str,
-    num_encoder_layers: int,
-    num_decoder_layers: int,
+    numEncoderLayers: int,
+    numDecoderLayers: int,
     embeddingSize: int,
     nhead: int,
-    srcVocabSize: int,
-    tgtVocabSize: int,
-    dim_feedforward: int = 512,
+    tokenize: TTokenizer,
+    vocab: dict[str, Vocab],
+    dimFeedforward: int = 512,
     dropout: float = 0.1,
     device: torch.device = torch.device("cpu")
   ):
@@ -33,19 +33,33 @@ class Seq2SeqTransformer(nn.Module):
     self.transformer = Transformer(
       d_model=embeddingSize,
       nhead=nhead,
-      num_encoder_layers=num_encoder_layers,
-      num_decoder_layers=num_decoder_layers,
-      dim_feedforward=dim_feedforward,
+      num_encoder_layers=numEncoderLayers,
+      num_decoder_layers=numDecoderLayers,
+      dim_feedforward=dimFeedforward,
       dropout=dropout
     )
-    self.generator = nn.Linear(embeddingSize, tgtVocabSize)
-    self.src_tok_emb = TokenEmbedding(srcVocabSize, embeddingSize)
-    self.tgt_tok_emb = TokenEmbedding(tgtVocabSize, embeddingSize)
-    self.positional_encoding = PositionalEncoding(embeddingSize, dropout=dropout)
-    self.batchSize = batchSize
+
     self.srcLanguage = srcLanguage
     self.tgtLanguage = tgtLanguage
+    self.tokenize = tokenize
+    self.vocab = vocab
+
+    self.batchSize = batchSize
     self.device = device
+
+    srcVocabSize = len(vocab[self.srcLanguage])
+    tgtVocabSize = len(vocab[self.tgtLanguage])
+
+    self.generator = nn.Linear(embeddingSize, tgtVocabSize)
+    self.srcEmbedding = TokenEmbedding(srcVocabSize, embeddingSize)
+    self.tgtEmbedding = TokenEmbedding(tgtVocabSize, embeddingSize)
+    self.positionalEncoding = PositionalEncoding(embeddingSize, dropout=dropout)
+
+  def srcTextTransform(self, text: str) -> Tensor:
+    return tensorTransform(self.vocab[self.srcLanguage](self.tokenize(text)))
+
+  def tgtTextTransform(self, text: str) -> Tensor:
+    return tensorTransform(self.vocab[self.tgtLanguage](self.tokenize(text)))
 
   def forward(
     self,
@@ -57,8 +71,8 @@ class Seq2SeqTransformer(nn.Module):
     tgtPaddingMask: Tensor,
     memory_key_padding_mask: Tensor
   ):
-    srcEmbedding = self.positional_encoding(self.src_tok_emb(src))
-    tgtEmbedding = self.positional_encoding(self.tgt_tok_emb(trg))
+    srcEmbedding = self.positionalEncoding(self.srcEmbedding(src))
+    tgtEmbedding = self.positionalEncoding(self.tgtEmbedding(trg))
     outs = self.transformer(
       srcEmbedding,
       tgtEmbedding,
@@ -73,13 +87,13 @@ class Seq2SeqTransformer(nn.Module):
 
   def encode(self, src: Tensor, srcMask: Tensor):
     return self.transformer.encoder(
-      self.positional_encoding(self.src_tok_emb(src)),
+      self.positionalEncoding(self.srcEmbedding(src)),
       srcMask
     )
 
   def decode(self, tgt: Tensor, memory: Tensor, tgtMask: Tensor):
     return self.transformer.decoder(
-      self.positional_encoding(self.tgt_tok_emb(tgt)),
+      self.positionalEncoding(self.tgtEmbedding(tgt)),
       memory,
       tgtMask
     )
@@ -87,18 +101,19 @@ class Seq2SeqTransformer(nn.Module):
   # Method for translating from srcLanguage to tgtLangauge (Japanese -> simplified Japanese)
   def translate(self, srcSentence: str):
     self.eval()
-    src = textTransform[SRC_LANGUAGE](srcSentence).view(-1, 1)
-    num_tokens = src.shape[0]
-    srcMask = (torch.zeros(num_tokens, num_tokens)).type(torch.bool)
+    src = self.srcTextTransform(srcSentence).view(-1, 1)
+    numTokens = src.shape[0]
+    srcMask = (torch.zeros(numTokens, numTokens)).type(torch.bool)
     tgtTokens = greedyDecode(
       self,
       src,
       srcMask,
-      maxLen=num_tokens + 5,
+      maxLen=numTokens + 5,
       startSymbol=BOS_IDX,
       device=self.device
     ).flatten()
-    tokens = vocabTransform[TGT_LANGUAGE].lookup_tokens(list(tgtTokens.cpu().numpy()))
+    tokensToLookUp = list(tgtTokens.cpu().numpy())
+    tokens = self.vocab[self.tgtLanguage].lookup_tokens(tokensToLookUp)
 
     return self.tokensToText(tokens)
 

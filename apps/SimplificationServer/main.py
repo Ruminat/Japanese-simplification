@@ -11,6 +11,7 @@ def startSimplificationServerApp():
   transformer = loadTransformer()
 
   @app.route("/processJapaneseText", methods=["GET"])
+  # @cross_origin() allows to make cross-domain requests to this route
   @cross_origin()
   def getProcessJapaneseText():
     text = request.args.get("text").strip()

@@ -42,10 +42,19 @@ python main.py --load
 Training the model with `python main.py --train` will replace the built model file in `./build`, so you might want to backup the model files.
 Or you can change the build file name in `./definitions.py`.
 
+## Simplification server
+
 You can start a server with a `/processJapaneseText` URL for simplification:
 ```bash
 python main.py --server
 ```
+
+Example of a request to the server:
+```bash
+curl http://127.0.0.1:5000/processJapaneseText?text=お前はもう死んでいる
+```
+
+## Command line flags
 
 You can run `main.py` with the following flags:
 - `--help` will print this README.md,

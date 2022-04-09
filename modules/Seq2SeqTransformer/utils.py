@@ -1,7 +1,8 @@
 from timeit import default_timer as timer
 
 import torch
-from modules.Dataset.main import MyDataset
+import tqdm
+from modules.Dataset.definitions import TJapaneseSimplificationDataset
 from modules.Language.definitions import BOS_IDX, PAD_IDX
 from modules.Language.utils import getCollateFn
 from torch import Tensor, nn
@@ -64,14 +65,18 @@ def greedyDecode(model, src, srcMask, maxLen, startSymbol, device: str) -> Tenso
 def evaluate(
   model: torch.nn,
   lossFn: torch.nn,
-  textTransform: dict,
-  dataset: MyDataset
+  dataset: TJapaneseSimplificationDataset
 ) -> float:
   model.eval()
   losses = 0
 
   valIter = dataset.getValidationSplit()
-  collateFn = getCollateFn(model.srcLanguage, model.tgtLanguage, textTransform)
+  collateFn = getCollateFn(
+    model.srcLanguage,
+    model.tgtLanguage,
+    model.srcTextTransform,
+    model.tgtTextTransform
+  )
   valDataloader = DataLoader(valIter, batch_size=model.batchSize, collate_fn=collateFn)
 
   for src, tgt in valDataloader:
@@ -105,32 +110,31 @@ def train(
   model: torch.nn,
   optimizer: torch.optim,
   lossFn: torch.nn,
-  textTransform: dict,
   epochs: int,
-  dataset: MyDataset
+  dataset: TJapaneseSimplificationDataset
 ) -> None:
   bestValue = 1729
   bestValueEpoch = 1
 
   for epoch in range(1, epochs + 1):
     startTime = timer()
-    trainLoss = trainEpoch(model, optimizer, lossFn, textTransform, dataset)
+    trainLoss = trainEpoch(model, optimizer, lossFn, dataset)
     endTime = timer()
     trainTime = endTime - startTime
 
     startTime = timer()
-    valueLoss = evaluate(model, lossFn, textTransform, dataset)
+    valueLoss = evaluate(model, lossFn, dataset)
     endTime = timer()
     evaluationTime = endTime - startTime
 
-    trainLossPrint = f"train loss: {trainLoss:.3f} ({trainTime:.1f}s)"
-    valLossPrint = f"val loss: {valueLoss:.3f} ({evaluationTime:.1f})"
-    print((f"epoch-{epoch}: ${trainLossPrint}, ${valLossPrint}"))
+    trainLossPrint = f"train-loss={trainLoss:.3f} ({trainTime:.1f}s)"
+    valLossPrint = f"val-loss={valueLoss:.3f} ({evaluationTime:.1f}s)"
+    print((f"epoch-{epoch}: {trainLossPrint}, {valLossPrint}"))
 
     if (valueLoss < bestValue):
       bestValue = valueLoss
       bestValueEpoch = epoch
-    if (epoch - bestValueEpoch > 3):
+    if (epoch - bestValueEpoch > 5):
       print("The model stopped improving, so we stop the learning process.")
       break
 
@@ -139,16 +143,20 @@ def trainEpoch(
   model: torch.nn,
   optimizer: torch.optim,
   lossFn: torch.nn,
-  textTransform: dict,
-  dataset: MyDataset
+  dataset: TJapaneseSimplificationDataset
 ) -> float:
   model.train()
   losses = 0
   train_iter = dataset.getTrainSplit()
-  collateFn = getCollateFn(model.srcLanguage, model.tgtLanguage, textTransform)
+  collateFn = getCollateFn(
+    model.srcLanguage,
+    model.tgtLanguage,
+    model.srcTextTransform,
+    model.tgtTextTransform
+  )
   trainSplit = DataLoader(train_iter, batch_size=model.batchSize, collate_fn=collateFn)
 
-  for src, tgt in trainSplit:
+  for src, tgt in tqdm.tqdm(trainSplit):
     src = src.to(model.device)
     tgt = tgt.to(model.device)
 
