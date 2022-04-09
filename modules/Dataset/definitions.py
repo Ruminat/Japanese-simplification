@@ -32,6 +32,3 @@ class TSimplificationDataset(TDatasetBase):
 @dataclass
 class TJapaneseSimplificationDataset(TSimplificationDataset):
   spacyKey: str = SPACY_JP
-
-  def sus(self):
-    return 42
