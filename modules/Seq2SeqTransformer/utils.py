@@ -33,13 +33,13 @@ def createMask(src: Tensor, tgt: Tensor, device: str):
   tgt_padding_mask = (tgt == PAD_IDX).transpose(0, 1)
   return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
 
-# Initializes the Transformer's parameters with the Glorot initialization.
+# Initializes the Transformer's parameters with the Glorot initialization
 def initializeTransformerParameters(transformer: nn.Module) -> None:
   for parameter in transformer.parameters():
     if parameter.dim() > 1:
       nn.init.xavier_uniform_(parameter)
 
-# Function to generate output sequence (simplified sentence) using the greedy algorithm.
+# Function to generate output sequence (simplified sentence) using the greedy algorithm
 def greedyDecode(model, src, srcMask, maxLen, startSymbol, device: str) -> Tensor:
   src = src.to(device)
   srcMask = srcMask.to(device)
