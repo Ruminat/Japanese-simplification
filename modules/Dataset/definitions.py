@@ -11,8 +11,8 @@ TDatasetFn = Callable[[], TDataset]
 @dataclass
 class TDatasetBase:
   getTrainSplit: TDatasetFn
-  getValidationSplit: Optional[TDatasetFn]
-  getTestSplit: Optional[TDatasetFn]
+  getValidationSplit: Optional[TDatasetFn] = None
+  getTestSplit: Optional[TDatasetFn] = None
 
   def iterateOverSplits(self):
     for row in self.getTrainSplit():
@@ -26,8 +26,8 @@ class TDatasetBase:
 
 @dataclass
 class TSimplificationDataset(TDatasetBase):
-  srcSentenceKey: str
-  tgtSentenceKey: str
+  srcSentenceKey: str = ""
+  tgtSentenceKey: str = ""
 
 @dataclass
 class TJapaneseSimplificationDataset(TSimplificationDataset):

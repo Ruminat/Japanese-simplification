@@ -1,14 +1,13 @@
 import torch
 
-from definitions import (BATCH_SIZE, BETAS, DATASET, DEFAULT_MODEL_FILENAME,
-                         DEVICE, DIM_FEEDFORWARD, EMB_SIZE, EPSILON,
-                         LEARNING_RATE, MODELS_DIR, NHEAD, NUM_DECODER_LAYERS,
-                         NUM_EPOCHS, SEED, SRC_LANGUAGE, TGT_LANGUAGE,
-                         WEIGHT_DECAY)
+from definitions import (BETAS, DEFAULT_MODEL_FILENAME, DEVICE, EPSILON,
+                         LEARNING_RATE, MODELS_DIR, SEED, WEIGHT_DECAY)
 from modules.Language.definitions import PAD_IDX
 from modules.Language.utils import getSpacyTokenizer, getVocabTransform
+from modules.Seq2SeqTransformer.definitions import \
+    TSeq2SeqTransformerParameters
 from modules.Seq2SeqTransformer.main import Seq2SeqTransformer
-from modules.Seq2SeqTransformer.utils import (initializeTransformerParameters,
+from modules.Seq2SeqTransformer.utils import (initializeTransformerParameter, initializeTransformerParameters,
                                               train)
 
 
@@ -33,23 +32,20 @@ def loadTransformer(fileName: str = DEFAULT_MODEL_FILENAME) -> Seq2SeqTransforme
   print("Transformer is ready to use")
   return transformer
 
-def getTrainedTransformer(fileName: str = DEFAULT_MODEL_FILENAME) -> Seq2SeqTransformer:
-  tokenize = getSpacyTokenizer(DATASET.spacyKey)
-  vocab = getVocabTransform(SRC_LANGUAGE, TGT_LANGUAGE, tokenize, DATASET)
+def getTrainedTransformer(params: TSeq2SeqTransformerParameters) -> Seq2SeqTransformer:
+  tokenize = params.customTokenizer \
+    if params.customTokenizer is not None \
+    else getSpacyTokenizer(params.dataset.spacyKey)
+  vocab = params.customVocab \
+    if params.customVocab is not None \
+    else getVocabTransform(
+      params.dataset.srcSentenceKey,
+      params.dataset.tgtSentenceKey,
+      tokenize,
+      params.dataset
+    )
 
-  transformer = Seq2SeqTransformer(
-    batchSize = BATCH_SIZE,
-    srcLanguage = SRC_LANGUAGE,
-    tgtLanguage = TGT_LANGUAGE,
-    numEncoderLayers = NUM_DECODER_LAYERS,
-    numDecoderLayers = NUM_DECODER_LAYERS,
-    embeddingSize = EMB_SIZE,
-    nhead = NHEAD,
-    tokenize = tokenize,
-    vocab = vocab,
-    dimFeedforward = DIM_FEEDFORWARD,
-    device = DEVICE
-  )
+  transformer = Seq2SeqTransformer(params=params, tokenize=tokenize, vocab=vocab)
   print("Created the Transformer model")
   initializeTransformerParameters(transformer)
   print("Initialized parameters")
@@ -66,9 +62,38 @@ def getTrainedTransformer(fileName: str = DEFAULT_MODEL_FILENAME) -> Seq2SeqTran
   print("Created lossFn and optimizer")
 
   print("Training the model...")
-  train(transformer, optimizer, lossFn, NUM_EPOCHS, DATASET)
+  train(transformer, optimizer, lossFn, params.maxEpochs, params.dataset)
   print("The model has trained well")
 
-  torch.save(transformer, f"{MODELS_DIR}/{fileName}")
+  torch.save(transformer, f"{MODELS_DIR}/{params.fileName}")
 
+  return transformer
+
+def fromPretrained(
+  transformer: Seq2SeqTransformer,
+  params: TSeq2SeqTransformerParameters
+) -> Seq2SeqTransformer:
+
+  encoder = []
+  rest = []
+  for name, param in transformer.named_parameters():
+    if "encoder" in name:
+      # print("PARAMETER (encoder shit)", name)
+      encoder.append(param)
+    else:
+      # print("PARAMETER (stupid bitch)", name)
+      # initializeTransformerParameter(param)
+      rest.append(param)
+
+  lossFn = torch.nn.CrossEntropyLoss(ignore_index=PAD_IDX)
+  optimizer = torch.optim.Adam(
+    [{'params': encoder}, {'params': rest}],
+    lr=LEARNING_RATE,
+    weight_decay=WEIGHT_DECAY,
+    betas=BETAS,
+    eps=EPSILON
+  )
+  optimizer.param_groups[0]['lr'] = LEARNING_RATE / 5
+  train(transformer, optimizer, lossFn, params.maxEpochs, params.dataset)
+  torch.save(transformer, f"{MODELS_DIR}/{params.fileName}")
   return transformer

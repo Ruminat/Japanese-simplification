@@ -1,7 +1,7 @@
 import sys
 from importlib import import_module
 
-__version__ = "0.0.1"
+__version__ = "1.0.0"
 hadErrors = False
 
 try:
@@ -38,7 +38,7 @@ elif ("--server" in sys.argv or "--serve" in sys.argv):
   app = getattr(serverModule, "startSimplificationServerApp")
   app()
 else:
-  print("Loading the transformer model...\n")
+  print("Starting the transformer model app...\n")
   transformerModule = import_module("apps.Transformer.main")
   app = getattr(transformerModule, "startTransformerApp")
   app()

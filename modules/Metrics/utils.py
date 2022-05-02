@@ -6,7 +6,6 @@ from modules.Language.utils import formatSentence
 
 from modules.Metrics.definitions import TMetricsData
 
-
 def getMetricsData(model: torch.nn, dataset: TJapaneseSimplificationDataset) -> TMetricsData:
   result = TMetricsData(
     srcSample = [],
@@ -18,7 +17,7 @@ def getMetricsData(model: torch.nn, dataset: TJapaneseSimplificationDataset) -> 
   )
   testSplit = dataset.getTestSplit()
   testDataloader = DataLoader(testSplit)
-  for datasetRow in tqdm.tqdm(testDataloader):
+  for datasetRow in tqdm.tqdm(testDataloader, leave=False):
     try:
       srcSample = formatSentence(datasetRow[dataset.srcSentenceKey][0])
       tgtSample = formatSentence(datasetRow[dataset.tgtSentenceKey][0])
@@ -27,6 +26,8 @@ def getMetricsData(model: torch.nn, dataset: TJapaneseSimplificationDataset) -> 
       tgtTokens = model.tokenize(tgtSample)
 
       translation = model.translate(srcSample)
+      if (srcSample[-1] == "。"):
+        translation += srcSample[-1]
       translationTokens = model.tokenize(translation)
 
       result.srcSample.append(srcSample)

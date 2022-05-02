@@ -1,14 +1,17 @@
 from typing import List
-from spacy import Vocab
+
 import torch
 import torch.nn as nn
 from modules.Embedding.main import TokenEmbedding
-from modules.Language.definitions import BOS_IDX, BOS_SYMBOL, EOS_SYMBOL, TTextTransformer, TTokenizer
+from modules.Language.definitions import (BOS_IDX, BOS_SYMBOL, EOS_SYMBOL,
+                                          TTokenizer)
 from modules.Language.utils import tensorTransform
 from modules.PositionalEncoding.main import PositionalEncoding
+from modules.Seq2SeqTransformer.definitions import \
+    TSeq2SeqTransformerParameters
 from modules.Seq2SeqTransformer.utils import greedyDecode
+from spacy import Vocab
 from torch import Tensor
-
 from torch.nn import Transformer
 
 
@@ -16,44 +19,42 @@ from torch.nn import Transformer
 class Seq2SeqTransformer(nn.Module):
   def __init__(
     self,
-    batchSize: int,
-    srcLanguage: str,
-    tgtLanguage: str,
-    numEncoderLayers: int,
-    numDecoderLayers: int,
-    embeddingSize: int,
-    nhead: int,
+    params: TSeq2SeqTransformerParameters,
     tokenize: TTokenizer,
-    vocab: dict[str, Vocab],
-    dimFeedforward: int = 512,
-    dropout: float = 0.1,
-    device: torch.device = torch.device("cpu")
+    vocab: dict[str, Vocab]
   ):
     super(Seq2SeqTransformer, self).__init__()
     self.transformer = Transformer(
-      d_model=embeddingSize,
-      nhead=nhead,
-      num_encoder_layers=numEncoderLayers,
-      num_decoder_layers=numDecoderLayers,
-      dim_feedforward=dimFeedforward,
-      dropout=dropout
+      d_model=params.embeddingSize,
+      nhead=params.attentionHeadsCount,
+      num_encoder_layers=params.encoderLayersCount,
+      num_decoder_layers=params.decoderLayersCount,
+      dim_feedforward=params.feedForwardSize,
+      dropout=params.dropout
     )
 
-    self.srcLanguage = srcLanguage
-    self.tgtLanguage = tgtLanguage
+    self.srcLanguage = params.dataset.srcSentenceKey
+    self.tgtLanguage = params.dataset.tgtSentenceKey
     self.tokenize = tokenize
     self.vocab = vocab
 
-    self.batchSize = batchSize
-    self.device = device
+    self.batchSize = params.batchSize
+    self.device = params.device
 
     srcVocabSize = len(vocab[self.srcLanguage])
     tgtVocabSize = len(vocab[self.tgtLanguage])
 
-    self.generator = nn.Linear(embeddingSize, tgtVocabSize)
-    self.srcEmbedding = TokenEmbedding(srcVocabSize, embeddingSize)
-    self.tgtEmbedding = TokenEmbedding(tgtVocabSize, embeddingSize)
-    self.positionalEncoding = PositionalEncoding(embeddingSize, dropout=dropout)
+    self.generator = nn.Linear(params.embeddingSize, tgtVocabSize)
+    self.srcEmbedding = TokenEmbedding(srcVocabSize, params.embeddingSize)
+    self.tgtEmbedding = TokenEmbedding(tgtVocabSize, params.embeddingSize)
+    self.positionalEncoding = PositionalEncoding(params.embeddingSize, dropout=params.dropout)
+
+    print(f"""
+      Created a Transformer model {self.srcLanguage} -> {self.tgtLanguage}:
+        - device "{self.device}"
+        - batch size = {self.batchSize}
+        - vocab ({srcVocabSize} -> {tgtVocabSize})
+    """)
 
   def srcTextTransform(self, text: str) -> Tensor:
     return tensorTransform(self.vocab[self.srcLanguage](self.tokenize(text)))
@@ -64,16 +65,16 @@ class Seq2SeqTransformer(nn.Module):
   def forward(
     self,
     src: Tensor,
-    trg: Tensor,
+    tgt: Tensor,
     srcMask: Tensor,
     tgtMask: Tensor,
     srcPaddingMask: Tensor,
     tgtPaddingMask: Tensor,
-    memory_key_padding_mask: Tensor
+    memoryKeyPaddingMask: Tensor
   ):
     srcEmbedding = self.positionalEncoding(self.srcEmbedding(src))
-    tgtEmbedding = self.positionalEncoding(self.tgtEmbedding(trg))
-    outs = self.transformer(
+    tgtEmbedding = self.positionalEncoding(self.tgtEmbedding(tgt))
+    output = self.transformer(
       srcEmbedding,
       tgtEmbedding,
       srcMask,
@@ -81,9 +82,9 @@ class Seq2SeqTransformer(nn.Module):
       None,
       srcPaddingMask,
       tgtPaddingMask,
-      memory_key_padding_mask
+      memoryKeyPaddingMask
     )
-    return self.generator(outs)
+    return self.generator(output)
 
   def encode(self, src: Tensor, srcMask: Tensor):
     return self.transformer.encoder(
@@ -101,7 +102,8 @@ class Seq2SeqTransformer(nn.Module):
   # Method for translating from srcLanguage to tgtLangauge (Japanese -> simplified Japanese)
   def translate(self, srcSentence: str):
     self.eval()
-    src = self.srcTextTransform(srcSentence).view(-1, 1)
+    transformedSentence = self.srcTextTransform(srcSentence)
+    src = transformedSentence.view(-1, 1)
     numTokens = src.shape[0]
     srcMask = (torch.zeros(numTokens, numTokens)).type(torch.bool)
     tgtTokens = greedyDecode(
@@ -111,7 +113,8 @@ class Seq2SeqTransformer(nn.Module):
       maxLen=numTokens + 5,
       startSymbol=BOS_IDX,
       device=self.device
-    ).flatten()
+    )
+    tgtTokens = tgtTokens.flatten()
     tokensToLookUp = list(tgtTokens.cpu().numpy())
     tokens = self.vocab[self.tgtLanguage].lookup_tokens(tokensToLookUp)
 

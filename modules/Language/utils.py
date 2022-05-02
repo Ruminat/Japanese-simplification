@@ -82,13 +82,17 @@ def getCollateFn(
     srcBatch, tgtBatch = [], []
     for sample in batch:
       srcSample, tgtSample = sample[srcLanguage], sample[tgtLanguage]
-      srcBatch.append(srcTextTransform(srcSample.rstrip("\n")))
-      tgtBatch.append(tgtTextTransform(tgtSample.rstrip("\n")))
+      srcBatch.append(srcTextTransform(formatSentence(srcSample)))
+      tgtBatch.append(tgtTextTransform(formatSentence(tgtSample)))
 
     srcBatch = pad_sequence(srcBatch, padding_value=PAD_IDX)
     tgtBatch = pad_sequence(tgtBatch, padding_value=PAD_IDX)
     return srcBatch, tgtBatch
   return collateFn
 
-def formatSentence(sentence: str) -> str:
-  return sentence.rstrip("。").rstrip("\n")
+def formatSentence(sentence: str, removeDot = False) -> str:
+  if (removeDot):
+    return sentence.rstrip("。").rstrip("\n")
+  else:
+    return sentence.rstrip("\n")
+

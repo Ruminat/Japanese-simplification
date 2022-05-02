@@ -1,26 +1,38 @@
 import sys
 
-from definitions import DATASET
+from apps.Transformer.definitions import (baseModelParams,
+                                          fromPretrainedParams,
+                                          wikiModelParams)
+from modules.Dataset.snowSimplifiedJapanese.main import \
+    snowSimplifiedJapaneseDataset
 from modules.Metrics.LanguageMetrics.bleu import getBleuScore
 from modules.Metrics.LanguageMetrics.sari import getSariScore
 from modules.Metrics.utils import getMetricsData
 from modules.Seq2SeqTransformer.main import Seq2SeqTransformer
-from utils import (getTrainedTransformer, initiatePyTorch, loadTransformer,
+from utils import (fromPretrained, getTrainedTransformer, initiatePyTorch, loadTransformer,
                    prettyPrintSentencesTranslation)
 
+# wikiModelParams
 
 def startTransformerApp() -> None:
   initiatePyTorch()
 
   if ("--train" in sys.argv):
     print("\n-- TRAIN MODE --\n")
-    transformer = getTrainedTransformer()
+    transformer = getTrainedTransformer(baseModelParams)
+    # transformer = getTrainedTransformer(wikiModelParams)
+    # pretrainedTransformer = loadTransformer(wikiModelParams.fileName)
+    # transformer = fromPretrained(pretrainedTransformer, fromPretrainedParams)
   elif ("--load" in sys.argv):
     print("\n-- LOADING THE SAVED MODEL --\n")
-    transformer = loadTransformer()
+    transformer = loadTransformer(fromPretrainedParams.fileName)
   else:
-    print("\n-- DEFAULT (TRAIN) MODE --\n")
-    transformer = getTrainedTransformer()
+    print("""
+      Couldn't parse the provided command.
+      You can type
+        `python main.py --help`
+      to get the list of available commands.
+    """)
 
   if ("--no-print" not in sys.argv):
     # -- Testing the model --
@@ -46,14 +58,18 @@ def printTransformerTests(transformer: Seq2SeqTransformer) -> None:
     "彼はすぐに風邪をひく。",
     "彼は私のしたことにいちいち文句を言う。",
     "彼女は内気なので、ますます彼女が好きだ。",
+    "英仏海峡を泳ぎ渡るのに成功した最初の人はウェッブ船長でした。",
+    "彼女はほほえんで僕のささやかなプレゼントを受け取ってくれた。",
+    "料理はそうおいしくはなかったけれど、その他の点ではパーティーは成功した。",
+    "その絵の値段は１０ポンドです。","その絵の価格はポンドです。",
   ])
 
-  print("\nMetrics\n")
+  # print("\nMetrics\n")
 
-  print("Calculating the metrics data...")
-  metricsData = getMetricsData(transformer, DATASET)
-  print("Calculating the metrics...")
-  blueScore = getBleuScore(metricsData)
-  print(f"BLEU score: {blueScore}")
-  sariScore = getSariScore(metricsData)
-  print(f"SARI score: {sariScore}")
+  # print("Calculating the metrics data...")
+  # metricsData = getMetricsData(transformer, snowSimplifiedJapaneseDataset)
+  # print("Calculating the metrics...")
+  # blueScore = getBleuScore(metricsData)
+  # print(f"BLEU score: {blueScore}")
+  # sariScore = getSariScore(metricsData)
+  # print(f"SARI score: {sariScore}")
