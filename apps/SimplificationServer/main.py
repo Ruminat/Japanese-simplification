@@ -8,7 +8,7 @@ def startSimplificationServerApp():
   app = Flask(__name__)
 
   initiatePyTorch()
-  transformer = loadTransformer()
+  transformer = loadTransformer("from-pretrained.pt")
 
   @app.route("/processJapaneseText", methods=["GET"])
   # @cross_origin() allows to make cross-domain requests to this route

@@ -1,11 +1,14 @@
+from typing import Callable, List
+
 import torch
 import tqdm
 from modules.Dataset.definitions import TJapaneseSimplificationDataset
-from torch.utils.data import DataLoader
 from modules.Language.utils import formatSentence
-
 from modules.Metrics.definitions import TMetricsData
+from torch.utils.data import DataLoader
 
+
+# Returns metrics data in the needed format so we can just call the metric functions with it as is
 def getMetricsData(model: torch.nn, dataset: TJapaneseSimplificationDataset) -> TMetricsData:
   result = TMetricsData(
     srcSample = [],
@@ -39,3 +42,21 @@ def getMetricsData(model: torch.nn, dataset: TJapaneseSimplificationDataset) -> 
     except Exception as error:
       print("getMetricsData error:", error)
   return result
+
+# Used for getting single metric values instead of one overall value
+def getSingleMetricScores(
+  metricFn: Callable[[TMetricsData], float],
+  metricsData: TMetricsData
+) -> torch.Tensor:
+  result: List[float] = []
+  for i in range(0, len(metricsData.srcSample)):
+    singleMetricsData = TMetricsData(
+      srcSample = [metricsData.srcSample[i]],
+      tgtSample = [metricsData.tgtSample[i]],
+      srcTokens = [metricsData.srcTokens[i]],
+      tgtTokens = [metricsData.tgtTokens[i]],
+      translation = [metricsData.translation[i]],
+      translationTokens = [metricsData.translationTokens[i]],
+    )
+    result.append(metricFn(singleMetricsData))
+  return torch.Tensor(result)

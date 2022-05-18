@@ -2,6 +2,7 @@ from typing import Callable, List
 
 from torch import Tensor
 
+# Helper types
 TToken = str
 TTokensSentence = List[TToken]
 TTokensSentences = List[TTokensSentence]

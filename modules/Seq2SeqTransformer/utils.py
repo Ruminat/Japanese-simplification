@@ -39,10 +39,6 @@ def initializeTransformerParameters(transformer: nn.Module) -> None:
     if parameter.dim() > 1:
       nn.init.xavier_uniform_(parameter)
 
-def initializeTransformerParameter(parameter) -> None:
-  if parameter.dim() > 1:
-    nn.init.xavier_uniform_(parameter)
-
 # Function to generate output sequence (simplified sentence) using the greedy algorithm
 def greedyDecode(model, src, srcMask, maxLen, startSymbol, device: str) -> Tensor:
   src = src.to(device)

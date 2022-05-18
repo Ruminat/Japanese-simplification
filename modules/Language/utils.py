@@ -10,7 +10,7 @@ from torchtext.data.utils import get_tokenizer
 from torchtext.vocab import build_vocab_from_iterator
 
 
-# Create source and target language tokenizer. Make sure to install the dependencies.
+# Create source and target language tokenizer. Make sure to install the dependencies
 # pip install -U spacy
 # python -m spacy download ja_core_news_lg
 def getTokenTransform(srcLanguage: str, tgtLanguage: str) -> dict[str, TTokenizer]:
@@ -24,6 +24,7 @@ def getSpacyTokenizer(language: str) -> TTokenizer:
   print(f"Creating a spacy tokenizer ({language})...")
   return get_tokenizer("spacy", language=SPACY_JP)
 
+# Get source and target Vocab's
 def getVocabTransform(
   srcLanguage: str,
   tgtLanguage: str,
@@ -35,6 +36,7 @@ def getVocabTransform(
     tgtLanguage: getVocab(tokenize, dataset, tgtLanguage),
   }
 
+# Creates a Vocab object for the given tokenize function and dataset
 def getVocab(
   tokenize: TTokenizer,
   dataset: TJapaneseSimplificationDataset,
@@ -90,9 +92,9 @@ def getCollateFn(
     return srcBatch, tgtBatch
   return collateFn
 
+# Helper for removing redundant whitespace and dot symbols
 def formatSentence(sentence: str, removeDot = False) -> str:
   if (removeDot):
     return sentence.rstrip("。").rstrip("\n")
   else:
     return sentence.rstrip("\n")
-

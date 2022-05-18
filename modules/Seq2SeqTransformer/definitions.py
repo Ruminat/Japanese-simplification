@@ -1,14 +1,14 @@
 from dataclasses import dataclass
 from typing import Optional
 
+from modules.Dataset.definitions import TJapaneseSimplificationDataset
+from modules.Language.definitions import TTokenizer
 from spacy import Vocab
 
-from modules.Dataset.definitions import TJapaneseSimplificationDataset
-
 from definitions import DEFAULT_MODEL_FILENAME, DEVICE
-from modules.Language.definitions import TTokenizer
 
 
+# The dataclass for Seq2SeqTransformer with adequate defaults
 @dataclass
 class TSeq2SeqTransformerParameters:
   dataset: TJapaneseSimplificationDataset

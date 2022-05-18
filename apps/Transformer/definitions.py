@@ -4,13 +4,13 @@ from modules.Seq2SeqTransformer.definitions import TSeq2SeqTransformerParameters
 from modules.Dataset.snowSimplifiedJapanese.main import snowSimplifiedJapaneseDataset
 from modules.Dataset.wikipediaJa.main import wikipediaJpDataset
 
-jpSpacyTokenizer = getSpacyTokenizer(SPACY_JP)
-jpVocabTransform = getVocabTransform(
-  snowSimplifiedJapaneseDataset.srcSentenceKey,
-  snowSimplifiedJapaneseDataset.tgtSentenceKey,
-  jpSpacyTokenizer,
-  snowSimplifiedJapaneseDataset
-)
+# jpSpacyTokenizer = getSpacyTokenizer(SPACY_JP)
+# jpVocabTransform = getVocabTransform(
+#   snowSimplifiedJapaneseDataset.srcSentenceKey,
+#   snowSimplifiedJapaneseDataset.tgtSentenceKey,
+#   jpSpacyTokenizer,
+#   snowSimplifiedJapaneseDataset
+# )
 
 baseModelParams = TSeq2SeqTransformerParameters(
   dataset=snowSimplifiedJapaneseDataset
@@ -18,8 +18,8 @@ baseModelParams = TSeq2SeqTransformerParameters(
 
 wikiModelParams = TSeq2SeqTransformerParameters(
   dataset=wikipediaJpDataset,
-  customTokenizer=jpSpacyTokenizer,
-  customVocab=jpVocabTransform,
+  # customTokenizer=jpSpacyTokenizer,
+  # customVocab=jpVocabTransform,
   fileName="transformer-wiki.pt",
 )
 
